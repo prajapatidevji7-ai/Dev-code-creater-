@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dev Code Creator PRO</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:'Segoe UI',sans-serif;
+  background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+  color:white;
+  text-align:center;
+  display:flex;
+  flex-direction:column;
+  min-height:100vh;
+}
+nav{background:#111;padding:12px;position:sticky;top:0;z-index:1000;box-shadow:0 2px 10px rgba(0,0,0,0.5);}
+nav button{background:none;border:none;color:#00e5ff;margin:0 12px;font-size:16px;font-weight:bold;}
+.page{display:none;padding:15px;flex:1;}
+.active{display:block}
+.card{background:rgba(255,255,255,0.08);padding:15px;border-radius:12px;max-width:900px;margin:auto;}
+textarea{width:100%;height:38vh;background:#0d0d0d;color:#00ffcc;border:none;border-radius:10px;padding:12px;font-family:monospace;resize:none;}
+.btn{padding:10px 16px;margin:8px 5px;border:none;border-radius:6px;background:#00e5ff;font-weight:bold;}
+iframe{width:100%;height:40vh;border:none;border-radius:8px;background:white;margin-top:10px;}
+footer{padding:10px;background:#111;font-size:14px;}
+
+/* SYMBOL BAR */
+#symbolBar{
+  position:fixed;bottom:0;left:0;width:100%;
+  background:#111;padding:6px;display:none;
+  overflow-x:auto;white-space:nowrap;z-index:9999;
+}
+#symbolBar button{
+  background:#00e5ff;border:none;margin:4px;
+  padding:8px 12px;border-radius:6px;font-weight:bold;
+}
+
+/* LOADER */
+#loader{
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+  display:flex;justify-content:center;align-items:center;
+  z-index:10000;flex-direction:column;
+  transition:opacity .5s ease, visibility .5s;
+}
+.loader-box{text-align:center;color:white;}
+.spinner{
+  width:60px;height:60px;border:6px solid rgba(255,255,255,0.2);
+  border-top:6px solid #00e5ff;border-radius:50%;
+  animation:spin 1s linear infinite;margin:auto;margin-bottom:20px;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+#loader.hide{opacity:0;visibility:hidden;}
+</style>
+</head>
+
+<body>
+
+<!-- LOADING SCREEN -->
+<div id="loader">
+  <div class="loader-box">
+    <div class="spinner"></div>
+    <h2>Dev Code Creator PRO</h2>
+    <p>Initializing Workspace...</p>
+  </div>
+</div>
+
+<nav>
+  <button onclick="showPage('editor')">Home</button>
+  <button onclick="showPage('saved')">Saved</button>
+</nav>
+
+<div id="editor" class="page active">
+  <div class="card">
+    <h2>Code Lab</h2>
+    <textarea id="codeBox"><h1 style="color:black;">Welcome Devji 🚀</h1></textarea>
+
+    <div id="symbolBar">
+      <button data-sym="<">&lt;</button><button data-sym=">">&gt;</button>
+      <button data-sym="{">{</button><button data-sym="}">}</button>
+      <button data-sym="(">(</button><button data-sym=")">)</button>
+      <button data-sym="[">[</button><button data-sym="]">]</button>
+      <button data-sym="/">/</button><button data-sym=";">;</button>
+      <button data-sym="=">=</button><button data-sym='"'>" "</button>
+      <button data-sym="'">'</button><button data-sym=":">:</button>
+      <button data-sym=",">,</button><button data-sym=".">.</button>
+      <button data-sym="+">+</button><button data-sym="-">-</button>
+      <button data-sym="*">*</button><button data-sym="&">&</button>
+      <button data-sym="|">|</button>
+    </div>
+
+    <br>
+    <button class="btn" onclick="runCode()">Run</button>
+    <button class="btn" onclick="saveProject()">Save</button>
+    <button class="btn" onclick="exportHTML()">Export HTML</button>
+    <button class="btn" onclick="clearCode()">Clear</button>
+    <iframe id="output"></iframe>
+  </div>
+</div>
+
+<div id="saved" class="page">
+  <h2>Saved Projects</h2>
+  <div id="savedList"></div>
+</div>
+
+<footer>Dev Code Creator PRO</footer>
+
+<script>
+let codeBox,savedList,projects=[],timer;
+
+window.addEventListener("DOMContentLoaded",()=>{
+  codeBox=document.getElementById("codeBox");
+  savedList=document.getElementById("savedList");
+  const symbolBar=document.getElementById("symbolBar");
+
+  try{projects=JSON.parse(localStorage.getItem("dev_projects")||"[]");}catch(e){projects=[];}
+  renderProjects();runCode();
+
+  codeBox.addEventListener("input",()=>{clearTimeout(timer);timer=setTimeout(runCode,400);});
+  codeBox.addEventListener("focus",()=>symbolBar.style.display="block");
+
+  document.addEventListener("click",(e)=>{
+    if(!symbolBar.contains(e.target)&&e.target!==codeBox){symbolBar.style.display="none";}
+  });
+
+  symbolBar.addEventListener("click",(e)=>{
+    if(e.target.tagName==="BUTTON") insertSymbol(e.target.dataset.sym);
+  });
+});
+
+function insertSymbol(sym){
+  const s=codeBox.selectionStart,e=codeBox.selectionEnd,t=codeBox.value;
+  codeBox.value=t.substring(0,s)+sym+t.substring(e);
+  codeBox.focus();codeBox.selectionStart=codeBox.selectionEnd=s+sym.length;
+}
+
+function showPage(id){document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.getElementById(id).classList.add("active");if(id==="saved")renderProjects();}
+function runCode(){const f=document.getElementById("output").contentDocument;f.open();f.write(codeBox.value);f.close();}
+function clearCode(){codeBox.value=""}
+function saveProject(){const n=prompt("Project name:");if(!n)return;projects.push({name:n,code:codeBox.value});localStorage.setItem("dev_projects",JSON.stringify(projects));renderProjects();alert("Saved!");}
+function renderProjects(){savedList.innerHTML=projects.length===0?"No saved projects":"";projects.forEach((p,i)=>{savedList.innerHTML+=`<div style="background:#111;margin:10px;padding:10px;border-radius:8px;"><b>${p.name}</b><br><button onclick="loadProject(${i})">Load</button><button onclick="deleteProject(${i})">Delete</button></div>`;});}
+function loadProject(i){codeBox.value=projects[i].code;showPage('editor');runCode();}
+function deleteProject(i){projects.splice(i,1);localStorage.setItem("dev_projects",JSON.stringify(projects));renderProjects();}
+
+async function exportHTML(){
+  let code=codeBox.value.trim();
+  if(!code.toLowerCase().includes("<html")){code=`<!DOCTYPE html><html><body>${code}</body></html>`;}
+  try{
+    const handle=await window.showSaveFilePicker({suggestedName:"project.html"});
+    const writable=await handle.createWritable();
+    await writable.write(code);await writable.close();
+    alert("File Manager ma save thai gayu ✅");
+  }catch(err){alert("Chrome ma open karo.");}
+}
+
+/* LOADER HIDE */
+window.addEventListener("load",()=>{
+  setTimeout(()=>{document.getElementById("loader").classList.add("hide");},1500);
+});
+</script>
+
+</body>
+</html>
